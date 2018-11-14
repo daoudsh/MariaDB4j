@@ -54,6 +54,9 @@ public class DB {
     private File baseDir;
     private File libDir;
     private File dataDir;
+
+    private File timezoneDir;
+
     private ManagedProcess mysqldProcess;
 
     protected int dbStartMaxWaitInMS = 30000;
@@ -79,6 +82,7 @@ public class DB {
         db.prepareDirectories();
         db.unpackEmbeddedDb();
         db.install();
+        db.installTimeZone();
         return db;
     }
 
@@ -134,6 +138,22 @@ public class DB {
             throw new ManagedProcessException("An error occurred while installing the database", e);
         }
         logger.info("Installation complete.");
+    }
+    /**
+     * install time zone files for windows
+     *
+     * @return
+     */
+    private void installTimeZone() {
+        if (configuration.isWindows()) {
+            try {
+                Util.extractFromClasspathToFile(configuration.getBinariesClassPathLocation() + "/timezone",
+                        timezoneDir);
+            } catch (IOException e) {
+                throw new RuntimeException("Error unpacking timezone files for DB", e);
+            }
+        }
+
     }
 
     protected String getWinExeExt() {
@@ -371,6 +391,7 @@ public class DB {
                 FileUtils.deleteDirectory(new File(dataDirPath));
             }
             dataDir = Util.getDirectory(dataDirPath);
+            timezoneDir = Util.getDirectory(dataDirPath + "/mysql");
         } catch (Exception e) {
             throw new ManagedProcessException("An error occurred while preparing the data directory", e);
         }
